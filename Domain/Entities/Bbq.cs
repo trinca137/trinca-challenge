@@ -44,7 +44,7 @@ namespace Domain.Entities
 
             //Se ao rejeitar, o número de pessoas confirmadas no churrasco for menor que sete,
             //o churrasco deverá ter seu status atualizado para “Pendente de confirmações”.
-            if (BbqConfirmation < 4)
+            if (BbqConfirmation < 7 && Status != BbqStatus.PendingConfirmations)
                 Status = BbqStatus.PendingConfirmations;
         }
 

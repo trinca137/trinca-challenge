@@ -31,9 +31,13 @@ namespace Serverless_Api
             var answer = await req.Body<InviteAnswer>();
 
             var person = await _repository.GetAsync(_user.Id);
-
+           
             if (person == null)
                 return req.CreateResponse(System.Net.HttpStatusCode.NoContent);
+
+            if (person.Invites.Where(o => o.Id == inviteId && o.Status == InviteStatus.Declined).Any())
+                return await req.CreateResponse(System.Net.HttpStatusCode.NoContent, "Invite já foi delinado");
+
 
             var @event = new InviteWasDeclined { InviteId = inviteId, PersonId = person.Id, IsVeg = answer.IsVeg };
 
