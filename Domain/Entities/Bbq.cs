@@ -9,6 +9,10 @@ namespace Domain.Entities
         public BbqStatus Status { get; set; }
         public DateTime Date { get; set; }
         public bool IsTrincasPaying { get; set; }
+        public int BbqConfirmation { get; set; }
+        public ShoppingList ShoppingListBbq { get; set; } = new ShoppingList();
+
+
         public void When(ThereIsSomeoneElseInTheMood @event)
         {
             Id = @event.Id.ToString();
@@ -33,8 +37,29 @@ namespace Domain.Entities
             //TODO:Deve ser possível rejeitar um convite já aceito antes.
             //Se este for o caso, a quantidade de comida calculada pelo aceite anterior do convite
             //deve ser retirado da lista de compras do churrasco.
+            BbqConfirmation -= 1;
+            var veg = @event.IsVeg ? -0.6 : -0.3;
+            var meat = @event.IsVeg ? 0 : -0.3;
+            ShoppingListBbq.AtualizarLista(veg, meat);
+
             //Se ao rejeitar, o número de pessoas confirmadas no churrasco for menor que sete,
-            //o churrasco deverá ter seu status atualizado para “Pendente de confirmações”. 
+            //o churrasco deverá ter seu status atualizado para “Pendente de confirmações”.
+            if (BbqConfirmation < 4)
+                Status = BbqStatus.PendingConfirmations;
+        }
+
+        public void When(InviteWasAccepted @event)
+        {
+            BbqConfirmation += 1;
+
+            var veg = @event.IsVeg ? 0.6 : 0.3;
+            var meat = @event.IsVeg ? 0 : 0.3;
+            ShoppingListBbq.AtualizarLista(veg, meat);
+        }
+
+        public void When(BbqConfirmed @event)
+        {
+            Status = @event.Confirmed ? BbqStatus.Confirmed : BbqStatus.PendingConfirmations;
         }
 
         public object TakeSnapshot()
@@ -44,7 +69,9 @@ namespace Domain.Entities
                 Id,
                 Date,
                 IsTrincasPaying,
-                Status = Status.ToString()
+                Status = Status.ToString(),
+                BbqConfirmation,
+                ShoppingListBbq
             };
         }
     }

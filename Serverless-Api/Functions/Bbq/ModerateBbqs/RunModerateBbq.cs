@@ -27,19 +27,35 @@ namespace Serverless_Api
 
             var bbq = await _repository.GetAsync(id);
 
+            //Tá criando um novo evento, sem verificar se o churrasco de fato existe
             bbq.Apply(new BbqStatusUpdated(moderationRequest.GonnaHappen, moderationRequest.TrincaWillPay));
 
             var lookups = await _snapshots.AsQueryable<Lookups>("Lookups").SingleOrDefaultAsync();
 
-            foreach (var personId in lookups.PeopleIds)
-            {
-                var person = await _persons.GetAsync(personId);
-                var @event = new PersonHasBeenInvitedToBbq(bbq.Id, bbq.Date, bbq.Reason);
-                person.Apply(@event);
-                await _persons.SaveAsync(person);
-            }
-
             await _repository.SaveAsync(bbq);
+
+            lookups.PeopleIds.RemoveAll(item => lookups.ModeratorIds.Contains(item));
+
+            if (moderationRequest.GonnaHappen)
+            {
+                lookups.PeopleIds.RemoveAll(item => lookups.ModeratorIds.Contains(item));
+                foreach (var personId in lookups.PeopleIds)
+                {
+                    var person = await _persons.GetAsync(personId);
+                    var @event = new PersonHasBeenInvitedToBbq(bbq.Id, bbq.Date, bbq.Reason);
+                    person.Apply(@event);
+                    await _persons.SaveAsync(person);
+                }
+            }
+            else
+            {
+                foreach (var personId in lookups.ModeratorIds)
+                {
+                    var person = await _persons.GetAsync(personId);
+                    person.Apply(new InviteWasDeclined { InviteId = id, PersonId = person.Id });
+                    await _persons.SaveAsync(person);
+                }
+            }
 
             return await req.CreateResponse(System.Net.HttpStatusCode.OK, bbq.TakeSnapshot());
         }
