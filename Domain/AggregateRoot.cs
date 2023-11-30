@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using Microsoft.CSharp.RuntimeBinder;
 using System.Runtime.ExceptionServices;
+using Eveneum;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Domain
 {
@@ -11,12 +14,14 @@ namespace Domain
         public ulong Version { get; private set; }
         public List<IEvent> Changes { get; }
 
+        public DeleteMode DeleteMode => throw new NotImplementedException();
+
         public AggregateRoot()
         {
             Changes = new List<IEvent>();
         }
 
-        public void Rehydrate(IEnumerable<IEvent> events)
+        internal void Rehydrate(IEnumerable<IEvent> events)
         {
             foreach (var @event in events)
             {
@@ -43,5 +48,6 @@ namespace Domain
                 ExceptionDispatchInfo.Capture(new RuntimeBinderException(string.Format("Must implement event handler", @event.GetType(), GetType()), ex)).Throw();
             }
         }
+
     }
 }
